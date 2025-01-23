@@ -58,3 +58,21 @@ th {
   background-color: purple;
   color: white;
 }
+#clearButton {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+#clearButton:hover {
+  background-color: #e60000;
+}
+.clear{
+margin: 30px auto;
+display: flex;
+  justify-content: center;
+  align-items: center;
+}

@@ -106,7 +106,47 @@ function addNumber() {
 
     // Réinitialiser le champ d'entrée
     input.value = "";
+    saveTableState();
   } else {
     alert("Veuillez entrer un numéro valide entre 0 et 36.");
   }
 }
+
+function saveTableState() {
+  const tableBody = document.getElementById("numberTableBody");
+  const rows = Array.from(tableBody.children);
+  const tableData = rows.map((row) => {
+    return Array.from(row.children).map((cell) => ({
+      text: cell.textContent,
+      class: cell.className,
+    }));
+  });
+  localStorage.setItem("tableData", JSON.stringify(tableData));
+}
+
+function loadTableState() {
+  const tableData = JSON.parse(localStorage.getItem("tableData")) || [];
+  const tableBody = document.getElementById("numberTableBody");
+
+  tableData.forEach((rowData) => {
+    const row = document.createElement("tr");
+    rowData.forEach((cellData) => {
+      const cell = document.createElement("td");
+      cell.textContent = cellData.text;
+      if (cellData.class) cell.className = cellData.class;
+      row.appendChild(cell);
+    });
+    tableBody.appendChild(row);
+  });
+}
+
+function clearTable() {
+  const tableBody = document.getElementById("numberTableBody");
+  tableBody.innerHTML = ""; // Supprime tout le contenu du tableau
+  localStorage.removeItem("tableData"); // Supprime les données du localStorage
+  recentColors = [];
+  recentParities = [];
+  recentRanges = [];
+}
+
+document.addEventListener("DOMContentLoaded", loadTableState);
