@@ -3,28 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tableau avec Caractéristiques des Numéros</title>
+    <title>Tableau de Numéros</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Barre fixe pour l'input et le bouton -->
-    <div class="input-container">
-      <input type="text" id="valueInput" placeholder="Entrez un numéro" />
-      <button onclick="addValue()">Ajouter</button>
+    <div id="inputContainer">
+      <input type="number" id="numberInput" placeholder="Entrez un numéro" />
+      <button onclick="addNumber()">Ajouter</button>
     </div>
-
-    <!-- Tableau affichant les données -->
     <table>
       <thead>
         <tr>
           <th>Couleur</th>
-          <th>Tirage</th>
+          <th>Numéro</th>
           <th>Parité</th>
           <th>Plage</th>
         </tr>
       </thead>
-      <tbody id="valueTableBody">
-        <!-- Les valeurs ajoutées apparaîtront ici -->
+      <tbody id="numberTableBody">
+        <!-- Les résultats seront ajoutés ici -->
       </tbody>
     </table>
 

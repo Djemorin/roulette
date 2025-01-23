@@ -1,88 +1,60 @@
 body {
-    font-family: Arial, sans-serif;
-    font-size: 1.3em;
-    margin: 0;
-    padding: 0;
-    padding-top: 80px; /* Compense l'espace de la barre fixe */
-  }
-
-  /* Barre fixe en haut de l'écran */
-  .input-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: #f8f8f8;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    padding: 10px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-
-  input[type="text"] {
-    padding: 5px;
-    font-size: 16px;
-    width: 200px;
-  }
-
-  button {
-    margin-left: 10px;
-    padding: 5px 10px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-
-  table {
-    border-collapse: collapse;
-    margin: 20px auto;
-    width: 80%;
-  }
-
-  th,
-  td {
-    border: 1px solid #ccc;
-    padding: 10px 20px;
-    text-align: center;
-  }
-
-  .red {
-    background-color: red;
-    color: white;
-  }
-
-  .black {
-    background-color: black;
-    color: white;
-  }
-
-  .green {
-    background-color: green;
-    color: white;
-  }
-
-  .blue {
-    background-color: blue;
-    color: white;
-  }
-
-  .yellow {
-    background-color: yellow;
-    color: black;
-  }
-
-  .orange {
-    background-color: orange;
-    color: white;
-  }
-
-  .violet {
-    background-color: purple;
-    color: white;
-  }
-
-  .gray {
-    background-color: gray;
-    color: white;
-  }
+  font-family: Arial, sans-serif;
+  font-size: 1.2em;
+  margin: 0;
+  padding: 0;
+}
+#inputContainer {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: #f4f4f4;
+  padding: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+table {
+  margin: 60px auto 0;
+  border-collapse: collapse;
+  width: 80%;
+  text-align: center;
+}
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 10px;
+}
+th {
+  background-color: #f4f4f4;
+}
+.red {
+  background-color: red;
+  color: white;
+}
+.black {
+  background-color: black;
+  color: white;
+}
+.green {
+  background-color: green;
+  color: white;
+}
+.blue {
+  background-color: blue;
+  color: white;
+}
+.yellow {
+  background-color: yellow;
+  color: black;
+}
+.orange {
+  background-color: orange;
+  color: white;
+}
+.purple {
+  background-color: purple;
+  color: white;
+}
