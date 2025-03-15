@@ -33,7 +33,7 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 10px;
+  padding: 15px;
   background: linear-gradient(to bottom, #2c2c2c, #1a1a1a);
   box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -42,6 +42,7 @@ body {
   gap: 10px;
   margin-bottom: 20px;
   border-top: 2px solid #c4a128;
+  z-index: 1000;
 }
 
 #numberInput {
@@ -79,16 +80,18 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   gap: 10px;
   width: 100%;
   max-width: 600px;
-  height: calc(100vh - 100px);
+  height: calc(100vh - 120px); /* Ajusté pour l'input fixe */
   overflow-y: auto;
-  padding-bottom: 80px;
   background: rgba(0, 0, 0, 0.3);
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #c4a128;
+  margin-bottom: 70px; /* Espace pour l'input fixe */
+  scroll-behavior: smooth; /* Ajout d'une propriété pour scroller automatiquement vers le bas */
 }
 
 /* Style de la scrollbar */
@@ -107,6 +110,7 @@ body {
 
 .number-row {
   display: flex;
+  flex-direction: row;
   flex-wrap: nowrap;
   gap: 10px;
   align-items: center;
@@ -142,10 +146,10 @@ body {
 }
 
 .info-box {
-  padding: 5px 10px;
+  padding: 5px 8px;
   border-radius: 4px;
-  margin: 0 5px;
-  font-size: 14px;
+  margin: 0 3px;
+  font-size: 12px;
   min-width: 70px;
   text-align: center;
   text-transform: uppercase;
@@ -153,6 +157,9 @@ body {
   letter-spacing: 1px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   font-family: monospace; /* Pour un meilleur alignement des caractères */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rouge {
@@ -233,6 +240,7 @@ body {
 
   #input-container {
     flex-direction: column;
+    padding: 10px;
   }
 
   #numberInput,
@@ -241,13 +249,13 @@ body {
   }
 
   .number-row {
-    padding: 8px;
-    gap: 5px;
+    padding: 8px 5px;
+    gap: 3px;
   }
 
   .info-box {
-    padding: 3px 6px;
-    font-size: 12px;
+    padding: 3px 4px;
+    font-size: 11px;
     min-width: 50px;
   }
 
@@ -258,7 +266,8 @@ body {
   }
 
   .last-seen {
-    font-size: 12px;
-    min-width: auto;
+    font-size: 11px;
+    padding: 3px 4px;
+    min-width: 45px;
   }
 }
