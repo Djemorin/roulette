@@ -1,35 +1,27 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tableau de Numéros</title>
-    <link rel="stylesheet" href="style.css" />
+    <title>Suivi Roulette</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="inputContainer">
-      <input type="number" id="numberInput" placeholder="Entrez un numéro" />
-      <button onclick="addNumber()">Ajouter</button>
+    <div id="results-container"></div>
+    <div id="input-container">
+      <input
+        type="number"
+        id="numberInput"
+        min="0"
+        max="36"
+        placeholder="Entrez un numéro"
+      />
+      <button id="addButton">Ajouter</button>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Couleur</th>
-          <th>Numéro</th>
-          <th>Parité</th>
-          <th>Plage</th>
-        </tr>
-      </thead>
-      <tbody id="numberTableBody">
-        <!-- Les résultats seront ajoutés ici -->
-      </tbody>
-    </table>
-    <div class="clear">
-      <button id="clearButton" onclick="clearTable()">
-        Effacer les valeurs
-      </button>
-    </div>
-
-    <script src="app.js"></script>
+    <script src="script.js"></script>
   </body>
 </html>
