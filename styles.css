@@ -7,7 +7,7 @@
 body {
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   background: #1a1a1a;
@@ -33,7 +33,7 @@ body {
   bottom: 0;
   left: 0;
   width: 100%;
-  padding: 20px;
+  padding: 10px;
   background: linear-gradient(to bottom, #2c2c2c, #1a1a1a);
   box-shadow: 0 -2px 15px rgba(0, 0, 0, 0.5);
   display: flex;
@@ -45,7 +45,7 @@ body {
 }
 
 #numberInput {
-  padding: 10px;
+  padding: 8px;
   width: 100px;
   border: 1px solid #ccc;
   background: #2c2c2c;
@@ -58,7 +58,7 @@ body {
 }
 
 #addButton {
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: #007bff;
   border: none;
   color: white;
@@ -68,6 +68,7 @@ body {
   text-transform: uppercase;
   transition: transform 0.1s;
   font-size: 16px;
+  white-space: nowrap;
 }
 
 #addButton:hover {
@@ -79,19 +80,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  align-items: center;
   width: 100%;
   max-width: 600px;
   height: calc(100vh - 100px);
   overflow-y: auto;
-  scroll-behavior: smooth;
   padding-bottom: 80px;
   background: rgba(0, 0, 0, 0.3);
-  padding: 20px;
+  padding: 10px;
   border-radius: 10px;
   border: 1px solid #c4a128;
-  margin-bottom: 20px;
-  overflow-x: auto;
 }
 
 /* Style de la scrollbar */
@@ -110,6 +107,7 @@ body {
 
 .number-row {
   display: flex;
+  flex-wrap: nowrap;
   gap: 10px;
   align-items: center;
   background: linear-gradient(
@@ -120,6 +118,7 @@ body {
   padding: 15px;
   border-radius: 8px;
   width: 100%;
+  min-width: 0;
   border: 1px solid rgba(196, 161, 40, 0.3);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s;
@@ -198,6 +197,11 @@ body {
   border-radius: 5px;
   font-weight: bold;
   background-color: #f0f0f0;
+  aspect-ratio: 1;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
 }
 
 .alternance-indicator {
@@ -214,7 +218,17 @@ body {
 
 @media screen and (max-width: 480px) {
   body {
-    padding: 10px;
+    padding: 5px;
+  }
+
+  #results-container {
+    grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
+    gap: 3px;
+    padding: 5px;
+  }
+
+  .number-cell {
+    font-size: 12px;
   }
 
   #input-container {
@@ -224,5 +238,27 @@ body {
   #numberInput,
   #addButton {
     width: 100%;
+  }
+
+  .number-row {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .info-box {
+    padding: 3px 6px;
+    font-size: 12px;
+    min-width: 50px;
+  }
+
+  .number {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  .last-seen {
+    font-size: 12px;
+    min-width: auto;
   }
 }
