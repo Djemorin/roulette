@@ -10,11 +10,12 @@ let lastValues = {
   passManque: null,
 };
 
-// Ajouter ces variables globales
-let hasActiveSequence = false; // true quand une alerte est déclenchée
-let sequenceType = null; // type d'alternance active
-let lastValue = null; // dernière valeur pour vérifier l'alternance
-let sequenceBroken = false; // Devient true quand on rencontre un "-1"
+// Remplacer les variables globales de séquence par un objet qui gère les 3 types
+const activeSequences = {
+  color: { active: false, broken: false },
+  evenOdd: { active: false, broken: false },
+  passManque: { active: false, broken: false },
+};
 
 // Ajouter après les variables globales
 const alternanceValues = []; // Stocke les valeurs d'alternance pour chaque tirage
@@ -23,32 +24,31 @@ function isEven(num) {
   return num % 2 === 0;
 }
 
-function getAlternanceValue(currentNum, index) {
-  // Valeurs déjà stockées sont intouchables
-  if (alternanceValues[index] !== undefined) {
-    return alternanceValues[index];
+// Modifier la fonction getAlternanceValue
+function getAlternanceValue(currentNum, type, index) {
+  if (alternanceValues[index] === undefined) {
+    alternanceValues[index] = {};
   }
 
-  // Uniquement pour le dernier numéro
+  if (alternanceValues[index][type] !== undefined) {
+    return alternanceValues[index][type];
+  }
+
   const currentIndex = numbers.length - 1;
   if (index !== currentIndex) {
     return null;
   }
 
-  // Pour le zéro, retourner toujours "-0.5" et ne pas modifier la séquence
   if (currentNum === 0) {
-    alternanceValues[index] = "-0.5";
-    return alternanceValues[index];
+    alternanceValues[index][type] = "-0.5";
+    return alternanceValues[index][type];
   }
 
-  if (!hasActiveSequence) {
+  if (!activeSequences[type].active) {
     return null;
   }
 
-  // Ne traiter l'alternance que pour les nombres non-zéro
   const currentInfo = getNumberInfo(currentNum);
-
-  // Trouver le dernier nombre non-zéro pour la comparaison
   let previousIndex = index - 1;
   while (previousIndex >= 0 && numbers[previousIndex] === 0) {
     previousIndex--;
@@ -56,15 +56,15 @@ function getAlternanceValue(currentNum, index) {
 
   if (previousIndex >= 0) {
     const previousInfo = getNumberInfo(numbers[previousIndex]);
-    if (currentInfo[sequenceType] !== previousInfo[sequenceType]) {
-      alternanceValues[index] = "  +1";
+    if (currentInfo[type] !== previousInfo[type]) {
+      alternanceValues[index][type] = "  +1";
     } else {
-      alternanceValues[index] = "  -1";
-      hasActiveSequence = false;
+      alternanceValues[index][type] = "  -1";
+      activeSequences[type].active = false;
     }
   }
 
-  return alternanceValues[index];
+  return alternanceValues[index][type];
 }
 
 function getNumberInfo(num) {
@@ -85,41 +85,42 @@ function getLastSeen(num, index) {
   return lastIndex === -1 ? "-" : index - lastIndex;
 }
 
+// Modifier la fonction updateDisplay
 function updateDisplay() {
   resultsContainer.innerHTML = numbers
     .map((n, index) => {
       const info = getNumberInfo(n);
       const lastSeen = getLastSeen(n, index);
-      const alternanceValue = getAlternanceValue(n, index);
 
-      const alternanceHtml = alternanceValue
-        ? `<span class="info-box">${alternanceValue}</span>`
-        : `<span class="info-box"></span>`;
+      const colorValue = getAlternanceValue(n, "color", index);
+      const evenOddValue = getAlternanceValue(n, "evenOdd", index);
+      const passManqueValue = getAlternanceValue(n, "passManque", index);
 
       if (n === 0) {
         return `<div class="number-row">
-                <span class="number" style="background-color: #4CAF50">${n}</span>
-                <span class="info-box">Zero</span>
-                ${alternanceHtml}
-                <span class="info-box last-seen">${lastSeen} tours</span>
-            </div>`;
+                    <span class="number" style="background-color: #4CAF50">${n}</span>
+                    <span class="info-box">Zero</span>
+                    <span class="info-box last-seen">${lastSeen} tours</span>
+                </div>`;
       }
 
       return `<div class="number-row">
-            <span class="number ${info.color}">${n}</span>
-            <span class="info-box ${info.color}">${info.color}</span>
-            <span class="info-box ${info.evenOdd}">${info.evenOdd}</span>
-            <span class="info-box ${info.passManque}">${info.passManque}</span>
-            ${alternanceHtml}
-            <span class="info-box last-seen">${lastSeen} tours</span>
-        </div>`;
+                <span class="number ${info.color}">${n}</span>
+                <span class="info-box ${info.color}">${
+        colorValue || info.color
+      }</span>
+                <span class="info-box ${info.evenOdd}">${
+        evenOddValue || info.evenOdd
+      }</span>
+                <span class="info-box ${info.passManque}">${
+        passManqueValue || info.passManque
+      }</span>
+                <span class="info-box last-seen">${lastSeen} tours</span>
+            </div>`;
     })
     .join("");
 
-  // Scroll to bottom
-  setTimeout(() => {
-    resultsContainer.scrollTop = resultsContainer.scrollHeight;
-  }, 100);
+  resultsContainer.scrollTop = resultsContainer.scrollHeight;
 }
 
 function addNumber() {
@@ -140,26 +141,14 @@ function handleKeyPress(event) {
   }
 }
 
+// Modifier la fonction checkAlternances
 function checkAlternances() {
   const currentIndex = numbers.length - 1;
   const currentNum = numbers[currentIndex];
 
-  // Si c'est un zéro et qu'une séquence est active, alerter l'utilisateur
-  if (currentNum === 0 && hasActiveSequence) {
-    alert(
-      `Attention : Un zéro est sorti pendant une série d'alternances ${
-        sequenceType === "color"
-          ? "Rouge/Noir"
-          : sequenceType === "evenOdd"
-          ? "Pair/Impair"
-          : "Passe/Manque"
-      } !`
-    );
+  if (currentNum === 0) {
     return;
   }
-
-  // Ne pas traiter les zéros dans la détection d'alternances
-  if (currentNum === 0) return;
 
   const nonZeroNumbers = numbers.filter((n) => n !== 0);
   if (nonZeroNumbers.length < 6) return;
@@ -170,9 +159,7 @@ function checkAlternances() {
   ["color", "evenOdd", "passManque"].forEach((type) => {
     const sequence = info.map((i) => i[type]);
     if (sequence.every((val, i) => i === 0 || val !== sequence[i - 1])) {
-      hasActiveSequence = true;
-      sequenceType = type;
-      alternanceValues[currentIndex] = "  +1";
+      activeSequences[type].active = true;
       alert(
         `Attention : 6 alternances ${
           type === "color"
