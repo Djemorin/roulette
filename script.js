@@ -108,7 +108,7 @@ function updateDisplay() {
       if (n === 0) {
         return `<div class="number-row">
           <span class="number" style="background-color: #4CAF50">${n}</span>
-          <span class="info-box">${colorValue || "Zero"}</span>
+          <span class="info-box">${colorValue || ""}</span>
           <span class="info-box">${evenOddValue || ""}</span>
           <span class="info-box">${passManqueValue || ""}</span>
           <span class="info-box last-seen">${lastSeen} tours</span>
