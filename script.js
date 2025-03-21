@@ -40,8 +40,12 @@ function getAlternanceValue(currentNum, type, index) {
   }
 
   if (currentNum === 0) {
-    alternanceValues[index][type] = "-0.5";
-    return alternanceValues[index][type];
+    // On retourne "-0.5" uniquement si une séquence est active
+    if (activeSequences[type].active) {
+      alternanceValues[index][type] = "-0.5";
+      return alternanceValues[index][type];
+    }
+    return null;
   }
 
   if (!activeSequences[type].active) {
@@ -103,10 +107,12 @@ function updateDisplay() {
 
       if (n === 0) {
         return `<div class="number-row">
-                    <span class="number" style="background-color: #4CAF50">${n}</span>
-                    <span class="info-box">Zero</span>
-                    <span class="info-box last-seen">${lastSeen} tours</span>
-                </div>`;
+          <span class="number" style="background-color: #4CAF50">${n}</span>
+          <span class="info-box">${colorValue || "Zero"}</span>
+          <span class="info-box">${evenOddValue || ""}</span>
+          <span class="info-box">${passManqueValue || ""}</span>
+          <span class="info-box last-seen">${lastSeen} tours</span>
+        </div>`;
       }
 
       return `<div class="number-row">
@@ -156,7 +162,23 @@ function checkAlternances() {
   const currentIndex = numbers.length - 1;
   const currentNum = numbers[currentIndex];
 
-  if (currentNum === 0) return;
+  // On vérifie d'abord si on a un zéro avec une séquence active
+  if (currentNum === 0) {
+    ["color", "evenOdd", "passManque"].forEach((type) => {
+      if (activeSequences[type].active) {
+        alert(
+          `Attention : Séquence ${
+            type === "color"
+              ? "Rouge/Noir"
+              : type === "evenOdd"
+              ? "Pair/Impair"
+              : "Passe/Manque"
+          } en cours !`
+        );
+      }
+    });
+    return;
+  }
 
   const nonZeroNumbers = numbers.filter((n) => n !== 0);
   if (nonZeroNumbers.length < 6) return;
