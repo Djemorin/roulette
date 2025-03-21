@@ -10,11 +10,11 @@ let lastValues = {
   passManque: null,
 };
 
-// Remplacer les variables globales de séquence par un objet qui gère les 3 types
+// Modifier la déclaration de activeSequences
 const activeSequences = {
-  color: { active: false, broken: false },
-  evenOdd: { active: false, broken: false },
-  passManque: { active: false, broken: false },
+  color: { active: false, broken: false, negativeCount: 0 },
+  evenOdd: { active: false, broken: false, negativeCount: 0 },
+  passManque: { active: false, broken: false, negativeCount: 0 },
 };
 
 // Ajouter après les variables globales
@@ -58,9 +58,15 @@ function getAlternanceValue(currentNum, type, index) {
     const previousInfo = getNumberInfo(numbers[previousIndex]);
     if (currentInfo[type] !== previousInfo[type]) {
       alternanceValues[index][type] = "  +1";
+      activeSequences[type].negativeCount = 0; // Réinitialiser le compteur sur +1
     } else {
       alternanceValues[index][type] = "  -1";
-      activeSequences[type].active = false;
+      activeSequences[type].negativeCount++;
+
+      if (activeSequences[type].negativeCount >= 2) {
+        activeSequences[type].active = false;
+        activeSequences[type].negativeCount = 0;
+      }
     }
   }
 
@@ -123,13 +129,32 @@ function updateDisplay() {
   resultsContainer.scrollTop = resultsContainer.scrollHeight;
 }
 
+// Modifier la fonction addNumber
 function addNumber() {
   const number = parseInt(numberInput.value);
   if (number >= 0 && number <= 36) {
     numbers.push(number);
     numberInput.value = ""; // Réinitialiser l'input avant tout
-    checkAlternances(); // Vérifier les alternances ensuite
-    updateDisplay(); // Mettre à jour l'affichage en dernier
+
+    // Vérifier les nouvelles séquences
+    checkAlternances();
+
+    // Alerter pour les séquences actives
+    ["color", "evenOdd", "passManque"].forEach((type) => {
+      if (activeSequences[type].active) {
+        alert(
+          `Attention : Séquence ${
+            type === "color"
+              ? "Rouge/Noir"
+              : type === "evenOdd"
+              ? "Pair/Impair"
+              : "Passe/Manque"
+          } en cours !`
+        );
+      }
+    });
+
+    updateDisplay();
   } else {
     alert("Veuillez entrer un numéro entre 0 et 36");
   }
@@ -160,15 +185,6 @@ function checkAlternances() {
     const sequence = info.map((i) => i[type]);
     if (sequence.every((val, i) => i === 0 || val !== sequence[i - 1])) {
       activeSequences[type].active = true;
-      alert(
-        `Attention : 6 alternances ${
-          type === "color"
-            ? "Rouge/Noir"
-            : type === "evenOdd"
-            ? "Pair/Impair"
-            : "Passe/Manque"
-        } consécutives !`
-      );
     }
   });
 }
