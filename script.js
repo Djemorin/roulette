@@ -58,12 +58,11 @@ function getAlternanceValue(currentNum, type, index) {
     const previousInfo = getNumberInfo(numbers[previousIndex]);
     if (currentInfo[type] !== previousInfo[type]) {
       alternanceValues[index][type] = "  +1";
-      activeSequences[type].negativeCount = 0; // Réinitialiser le compteur sur +1
+      activeSequences[type].negativeCount = 0;
     } else {
       alternanceValues[index][type] = "  -1";
       activeSequences[type].negativeCount++;
-
-      if (activeSequences[type].negativeCount >= 2) {
+      if (activeSequences[type].negativeCount === 2) {
         activeSequences[type].active = false;
         activeSequences[type].negativeCount = 0;
       }
@@ -134,26 +133,12 @@ function addNumber() {
   const number = parseInt(numberInput.value);
   if (number >= 0 && number <= 36) {
     numbers.push(number);
-    numberInput.value = ""; // Réinitialiser l'input avant tout
+    numberInput.value = "";
 
-    // Vérifier les nouvelles séquences
+    // On vérifie d'abord les nouvelles séquences
     checkAlternances();
 
-    // Alerter pour les séquences actives
-    ["color", "evenOdd", "passManque"].forEach((type) => {
-      if (activeSequences[type].active) {
-        alert(
-          `Attention : Séquence ${
-            type === "color"
-              ? "Rouge/Noir"
-              : type === "evenOdd"
-              ? "Pair/Impair"
-              : "Passe/Manque"
-          } en cours !`
-        );
-      }
-    });
-
+    // Puis on met à jour l'affichage
     updateDisplay();
   } else {
     alert("Veuillez entrer un numéro entre 0 et 36");
@@ -171,9 +156,7 @@ function checkAlternances() {
   const currentIndex = numbers.length - 1;
   const currentNum = numbers[currentIndex];
 
-  if (currentNum === 0) {
-    return;
-  }
+  if (currentNum === 0) return;
 
   const nonZeroNumbers = numbers.filter((n) => n !== 0);
   if (nonZeroNumbers.length < 6) return;
@@ -183,8 +166,37 @@ function checkAlternances() {
 
   ["color", "evenOdd", "passManque"].forEach((type) => {
     const sequence = info.map((i) => i[type]);
-    if (sequence.every((val, i) => i === 0 || val !== sequence[i - 1])) {
+
+    // On vérifie d'abord si on a 6 alternances avant de potentiellement activer
+    const hasAlternances = sequence.every(
+      (val, i) => i === 0 || val !== sequence[i - 1]
+    );
+
+    // On vérifie ensuite si on doit désactiver la séquence
+    if (activeSequences[type].negativeCount >= 2) {
+      activeSequences[type].active = false;
+      activeSequences[type].negativeCount = 0;
+    } else if (hasAlternances) {
+      // On active seulement si on n'a pas 2 négatifs
       activeSequences[type].active = true;
+    }
+  });
+
+  // Les alertes ne se déclencheront que si la séquence est active
+  ["color", "evenOdd", "passManque"].forEach((type) => {
+    if (
+      activeSequences[type].active &&
+      activeSequences[type].negativeCount < 2
+    ) {
+      alert(
+        `Attention : Séquence ${
+          type === "color"
+            ? "Rouge/Noir"
+            : type === "evenOdd"
+            ? "Pair/Impair"
+            : "Passe/Manque"
+        } en cours !`
+      );
     }
   });
 }
