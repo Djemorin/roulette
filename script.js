@@ -189,12 +189,11 @@ function checkAlternances() {
   ["color", "evenOdd", "passManque"].forEach((type) => {
     const sequence = info.map((i) => i[type]);
 
-    // On vérifie d'abord si on a 6 alternances avant de potentiellement activer
     const hasAlternances = sequence.every(
       (val, i) => i === 0 || val !== sequence[i - 1]
     );
 
-    // On vérifie ensuite si on doit désactiver la séquence
+    // On vérifie d'abord si on doit désactiver la séquence
     if (activeSequences[type].negativeCount >= 2) {
       activeSequences[type].active = false;
       activeSequences[type].negativeCount = 0;
@@ -206,10 +205,24 @@ function checkAlternances() {
 
   // Les alertes ne se déclencheront que si la séquence est active
   ["color", "evenOdd", "passManque"].forEach((type) => {
-    if (
-      activeSequences[type].active &&
-      activeSequences[type].negativeCount < 2
-    ) {
+    if (activeSequences[type].active) {
+      const currentInfo = getNumberInfo(numbers[currentIndex]);
+      const previousNonZeroIndex = numbers.findLastIndex(
+        (n, i) => i < currentIndex && n !== 0
+      );
+      const previousInfo =
+        previousNonZeroIndex >= 0
+          ? getNumberInfo(numbers[previousNonZeroIndex])
+          : null;
+
+      // On vérifie si on est sur un -1
+      if (previousInfo && currentInfo[type] === previousInfo[type]) {
+        // Si c'est le deuxième -1, on n'affiche pas l'alerte
+        if (activeSequences[type].negativeCount === 1) {
+          return;
+        }
+      }
+
       alert(
         `Attention : Séquence ${
           type === "color"
