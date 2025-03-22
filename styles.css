@@ -251,25 +251,27 @@ body {
   }
 
   .number-row {
-    padding: 12px 8px;
+    padding: 15px 10px;
     gap: 5px;
   }
 
   .info-box {
     padding: 8px 10px;
-    font-size: 14px;
-    min-width: 65px;
+    font-size: 13px; /* Taille de texte réduite */
+    min-width: 90px; /* Garde la même largeur que desktop */
+    letter-spacing: 0; /* Réduit l'espacement des lettres */
   }
 
   .number {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+    width: 45px; /* Garde la même taille que desktop */
+    height: 45px;
+    line-height: 45px;
+    font-size: 18px; /* Légèrement réduit */
   }
 
   .last-seen {
-    font-size: 14px;
+    font-size: 13px;
     padding: 8px 10px;
-    min-width: 60px;
+    min-width: 70px;
   }
 }
