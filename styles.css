@@ -257,7 +257,7 @@ body {
 
   .info-box {
     padding: 8px 6px;
-    font-size: 12px; /* Taille de texte réduite */
+    font-size: 11px; /* Réduit encore la taille du texte */
     min-width: 80px; /* Garde la même largeur que desktop */
     letter-spacing: 0; /* Réduit l'espacement des lettres */
   }
@@ -266,12 +266,12 @@ body {
     width: 35px; /* Réduit pour mobile */
     height: 35px;
     line-height: 35px;
-    font-size: 16px;
+    font-size: 15px; /* Légèrement réduit */
     min-width: 35px; /* Assure une taille minimale */
   }
 
   .last-seen {
-    font-size: 11px;
+    font-size: 10px; /* Réduit encore la taille */
     padding: 8px 6px;
     min-width: 60px;
   }
