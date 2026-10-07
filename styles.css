@@ -319,7 +319,7 @@ body {
 
   /* Lignes compactes : environ deux fois plus de tirages visibles */
   .number-row {
-    padding: 2px 6px;
+    padding: 1px 6px;
     gap: 4px;
   }
 
@@ -335,11 +335,12 @@ body {
   }
 
   .number {
-    width: 24px; /* Réduit pour mobile */
-    height: 24px;
-    line-height: 24px;
-    font-size: 13px;
-    min-width: 24px; /* Assure une taille minimale */
+    /* Le numéro est l'info principale : plus grand que les cases */
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 18px;
+    min-width: 30px; /* Assure une taille minimale */
   }
 
   .last-seen {
