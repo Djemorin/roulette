@@ -2,6 +2,13 @@ const numbers = [];
 const resultsContainer = document.getElementById("results-container");
 const numberInput = document.getElementById("numberInput");
 const addButton = document.getElementById("addButton");
+const closedGrid = document.getElementById("closed-grid");
+
+// Ordre officiel du cylindre (roulette européenne), sens horaire à partir du 32
+const WHEEL_ORDER = [
+  32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16,
+  33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26,
+];
 
 // Historique des alternances pour chaque type
 let lastValues = {
@@ -12,9 +19,9 @@ let lastValues = {
 
 // Modifier la déclaration de activeSequences
 const activeSequences = {
-  color: { active: false, broken: false, negativeCount: 0 },
-  evenOdd: { active: false, broken: false, negativeCount: 0 },
-  passManque: { active: false, broken: false, negativeCount: 0 },
+  color: { active: false, broken: false, negativeCount: 0, startCount: 0 },
+  evenOdd: { active: false, broken: false, negativeCount: 0, startCount: 0 },
+  passManque: { active: false, broken: false, negativeCount: 0, startCount: 0 },
 };
 
 // Ajouter après les variables globales
@@ -132,12 +139,32 @@ function updateDisplay() {
     .join("");
 
   resultsContainer.scrollTop = resultsContainer.scrollHeight;
+
+  updateClosedNumbers();
+}
+
+// Un numéro est "fermé" quand il est sorti un nombre pair de fois (0 exclu)
+function updateClosedNumbers() {
+  const counts = {};
+  numbers.forEach((n) => {
+    if (n !== 0) counts[n] = (counts[n] || 0) + 1;
+  });
+
+  // Les 36 numéros toujours affichés, seuls les fermés sont allumés
+  closedGrid.innerHTML = WHEEL_ORDER.map((n) => {
+    const isClosed = counts[n] && counts[n] % 2 === 0;
+    return isClosed
+      ? `<span class="wheel-cell closed ${getNumberInfo(n).color}">${n}</span>`
+      : `<span class="wheel-cell">${n}</span>`;
+  }).join("");
 }
 
 // Modifier la fonction addNumber
 function addNumber() {
-  const number = parseInt(numberInput.value);
-  if (number >= 0 && number <= 36) {
+  const rawValue = numberInput.value.trim();
+  const number = Number(rawValue);
+  // Number("") vaut 0 : le champ vide doit être rejeté explicitement
+  if (rawValue !== "" && Number.isInteger(number) && number >= 0 && number <= 36) {
     numbers.push(number);
     numberInput.value = "";
 
@@ -164,19 +191,11 @@ function checkAlternances() {
 
   // On vérifie d'abord si on a un zéro avec une séquence active
   if (currentNum === 0) {
-    ["color", "evenOdd", "passManque"].forEach((type) => {
-      if (activeSequences[type].active) {
-        alert(
-          `Attention : Séquence ${
-            type === "color"
-              ? "Rouge/Noir"
-              : type === "evenOdd"
-              ? "Pair/Impair"
-              : "Passe/Manque"
-          } en cours !`
-        );
-      }
-    });
+    showSequenceAlert(
+      ["color", "evenOdd", "passManque"].filter(
+        (type) => activeSequences[type].active
+      )
+    );
     return;
   }
 
@@ -199,11 +218,16 @@ function checkAlternances() {
       activeSequences[type].negativeCount = 0;
     } else if (hasAlternances) {
       // On active seulement si on n'a pas 2 négatifs
+      if (!activeSequences[type].active) {
+        // Début de séquence : nombre de tirages non nuls avant les 6 alternances
+        activeSequences[type].startCount = nonZeroNumbers.length - 6;
+      }
       activeSequences[type].active = true;
     }
   });
 
   // Les alertes ne se déclencheront que si la séquence est active
+  const alertTypes = [];
   ["color", "evenOdd", "passManque"].forEach((type) => {
     if (activeSequences[type].active) {
       const currentInfo = getNumberInfo(numbers[currentIndex]);
@@ -223,18 +247,36 @@ function checkAlternances() {
         }
       }
 
-      alert(
-        `Attention : Séquence ${
-          type === "color"
-            ? "Rouge/Noir"
-            : type === "evenOdd"
-            ? "Pair/Impair"
-            : "Passe/Manque"
-        } en cours !`
-      );
+      alertTypes.push(type);
     }
   });
+  showSequenceAlert(alertTypes);
 }
+
+// Une seule alerte regroupant toutes les séquences en cours
+function showSequenceAlert(types) {
+  if (types.length === 0) return;
+
+  // Longueur de la séquence en tirages non nuls (les zéros ne comptent pas)
+  const nonZeroCount = numbers.filter((n) => n !== 0).length;
+
+  const labels = types.map((type) => {
+    const name =
+      type === "color"
+        ? "Rouge/Noir"
+        : type === "evenOdd"
+        ? "Pair/Impair"
+        : "Passe/Manque";
+    return `${name} : ${nonZeroCount - activeSequences[type].startCount} tours`;
+  });
+
+  // Une ligne par séquence pour ne pas en rater une
+  const title =
+    labels.length === 1 ? "Séquence en cours :" : "Séquences en cours :";
+  alert(`Attention ! ${title}\n${labels.map((l) => `• ${l}`).join("\n")}`);
+}
+
+updateClosedNumbers();
 
 // Event Listeners
 numberInput.addEventListener("keypress", handleKeyPress);

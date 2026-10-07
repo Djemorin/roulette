@@ -80,11 +80,15 @@ body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  /* Pas de justify-content: flex-end : le débordement partirait vers le haut,
+     hors de portée du scroll. Le margin-top: auto de la première ligne
+     colle les tirages en bas tout en gardant la scrollbar. */
+  justify-content: flex-start;
   gap: 0; /* Suppression de l'espace entre les tirages */
   width: 100%;
   max-width: 600px;
-  height: calc(100vh - 120px); /* Ajusté pour l'input fixe */
+  /* Ajusté pour l'input fixe et la grille des fermés (+ sa marge de 10px) */
+  height: calc(100vh - 120px - var(--closed-height) - 10px);
   overflow-y: auto;
   background: rgba(0, 0, 0, 0.3);
   padding: 10px;
@@ -92,6 +96,49 @@ body {
   border: 1px solid #c4a128;
   margin-bottom: 70px; /* Espace pour l'input fixe */
   scroll-behavior: smooth; /* Ajout d'une propriété pour scroller automatiquement vers le bas */
+}
+
+#results-container > .number-row:first-child {
+  margin-top: auto;
+}
+
+/* Grille des 36 numéros dans l'ordre du cylindre, hauteur fixe */
+:root {
+  --closed-height: 114px;
+}
+
+#closed-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+  max-width: 600px;
+  height: var(--closed-height);
+  margin: 0 auto 10px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #c4a128;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.wheel-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Numéro fermé : allumé, avec sa couleur */
+.wheel-cell.closed {
+  color: #fff;
+  font-weight: bold;
+  border: 2px solid #c4a128;
 }
 
 /* Style de la scrollbar */
@@ -226,14 +273,29 @@ body {
 }
 
 @media screen and (max-width: 480px) {
+  :root {
+    --closed-height: 96px;
+  }
+
   body {
     padding: 5px;
+  }
+
+  #closed-grid {
+    gap: 3px;
+    padding: 4px;
+  }
+
+  .wheel-cell {
+    font-size: 13px;
   }
 
   #results-container {
     grid-template-columns: repeat(auto-fill, minmax(35px, 1fr));
     gap: 3px;
     padding: 5px;
+    /* L'input fixe est sur deux lignes sur mobile */
+    height: calc(100vh - 135px - var(--closed-height) - 10px);
   }
 
   .number-cell {
@@ -258,7 +320,11 @@ body {
   .info-box {
     padding: 8px 6px;
     font-size: 11px; /* Réduit encore la taille du texte */
-    min-width: 80px; /* Garde la même largeur que desktop */
+    /* Les 4 cases se partagent la largeur disponible au lieu d'imposer
+       une largeur minimale qui faisait déborder la ligne */
+    flex: 1 1 0;
+    min-width: 0;
+    margin: 0;
     letter-spacing: 0; /* Réduit l'espacement des lettres */
   }
 
@@ -273,6 +339,6 @@ body {
   .last-seen {
     font-size: 10px; /* Réduit encore la taille */
     padding: 8px 6px;
-    min-width: 60px;
+    flex-grow: 1.3; /* "100 TOURS" est le texte le plus long */
   }
 }
