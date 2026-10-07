@@ -16,6 +16,7 @@
     <div id="closed-grid"></div>
     <div id="results-container"></div>
     <div id="input-container">
+      <button id="editButton" title="Modifier ou supprimer un tirage">✎</button>
       <input
         type="number"
         id="numberInput"
@@ -24,7 +25,9 @@
         placeholder="Entrez un numéro"
       />
       <button id="addButton">Ajouter</button>
+      <button id="clearButton" hidden>Tout effacer</button>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="script.js"></script>
   </body>
 </html>

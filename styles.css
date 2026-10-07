@@ -77,6 +77,63 @@ body {
   transform: scale(1.05);
 }
 
+#addButton:disabled {
+  opacity: 0.6;
+}
+
+/* Bouton d'édition : discret, à l'écart du bouton Ajouter */
+#editButton {
+  flex: 0 0 auto;
+  width: 40px;
+  background: transparent;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #aaa;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#clearButton {
+  padding: 8px 16px;
+  background: #b71c1c;
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+/* [hidden] perd face aux règles display des boutons sans ceci */
+#input-container [hidden] {
+  display: none;
+}
+
+/* Mode édition : barre orange, tirages cliquables */
+body.edit-mode #input-container {
+  border-top-color: #f57c00;
+  background: linear-gradient(to bottom, #4a2c00, #1a1a1a);
+}
+
+body.edit-mode #editButton {
+  background: #f57c00;
+  border-color: #f57c00;
+  color: #fff;
+}
+
+body.edit-mode .number-row {
+  cursor: pointer;
+  border-color: rgba(245, 124, 0, 0.6);
+}
+
+.status-message {
+  margin: auto;
+  color: #aaa;
+  font-size: 16px;
+}
+
 #results-container {
   margin: 0 auto;
   display: flex;
@@ -306,15 +363,16 @@ body {
     font-size: 12px;
   }
 
+  /* Ligne 1 : ✎ + saisie, ligne 2 : Ajouter (ou Tout effacer) */
   #input-container {
-    flex-direction: column;
+    flex-wrap: wrap;
     padding: 10px;
     margin: 0 -5px -5px; /* Suit le padding mobile du body */
   }
 
-  #numberInput,
-  #addButton {
-    width: 100%;
+  #addButton,
+  #clearButton {
+    flex: 1 1 100%;
   }
 
   /* Lignes compactes : environ deux fois plus de tirages visibles */

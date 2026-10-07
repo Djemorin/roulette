@@ -1,7 +1,18 @@
-const numbers = [];
+// Base Supabase (projet "Roulette") : la table spins est la source de vérité
+const SUPABASE_URL = "https://eyecoxpjvyloangqdjxa.supabase.co";
+const SUPABASE_KEY = "sb_publishable_AFGg1-JjOwpWbPMS1J1YEQ_KS7iW-Iv";
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let spins = []; // { id, number } triés par id, tels qu'en base
+const numbers = []; // reconstruit à partir de spins par rebuild()
+let editMode = false;
+let adding = false;
+
 const resultsContainer = document.getElementById("results-container");
 const numberInput = document.getElementById("numberInput");
 const addButton = document.getElementById("addButton");
+const editButton = document.getElementById("editButton");
+const clearButton = document.getElementById("clearButton");
 const closedGrid = document.getElementById("closed-grid");
 
 // Ordre officiel du cylindre (roulette européenne), sens horaire à partir du 32
@@ -101,8 +112,11 @@ function getLastSeen(num, index) {
   return lastIndex === -1 ? "-" : index - lastIndex;
 }
 
-// Modifier la fonction updateDisplay
-function updateDisplay() {
+// scrollMode : "bottom" (défilement doux vers le dernier tirage),
+// "instant" (saut direct vers le dernier tirage) ou "keep" (position conservée)
+function updateDisplay(scrollMode = "bottom") {
+  const previousScroll = resultsContainer.scrollTop;
+
   resultsContainer.innerHTML = numbers
     .map((n, index) => {
       const info = getNumberInfo(n);
@@ -113,7 +127,7 @@ function updateDisplay() {
       const passManqueValue = getAlternanceValue(n, "passManque", index);
 
       if (n === 0) {
-        return `<div class="number-row">
+        return `<div class="number-row" data-index="${index}">
           <span class="number" style="background-color: #4CAF50">${n}</span>
           <span class="info-box">${colorValue || ""}</span>
           <span class="info-box">${evenOddValue || ""}</span>
@@ -122,7 +136,7 @@ function updateDisplay() {
         </div>`;
       }
 
-      return `<div class="number-row">
+      return `<div class="number-row" data-index="${index}">
                 <span class="number ${info.color}">${n}</span>
                 <span class="info-box ${info.color}">${
         colorValue || info.color
@@ -138,7 +152,14 @@ function updateDisplay() {
     })
     .join("");
 
-  resultsContainer.scrollTop = resultsContainer.scrollHeight;
+  if (scrollMode === "keep") {
+    resultsContainer.scrollTo({ top: previousScroll, behavior: "instant" });
+  } else {
+    resultsContainer.scrollTo({
+      top: resultsContainer.scrollHeight,
+      behavior: scrollMode === "instant" ? "instant" : "smooth",
+    });
+  }
 
   updateClosedNumbers();
 }
@@ -159,23 +180,176 @@ function updateClosedNumbers() {
   }).join("");
 }
 
-// Modifier la fonction addNumber
-function addNumber() {
-  const rawValue = numberInput.value.trim();
-  const number = Number(rawValue);
+// Renvoie le numéro saisi, ou null s'il n'est pas un entier de 0 à 36
+function parseSpin(rawValue) {
+  const trimmed = String(rawValue).trim();
+  const number = Number(trimmed);
   // Number("") vaut 0 : le champ vide doit être rejeté explicitement
-  if (rawValue !== "" && Number.isInteger(number) && number >= 0 && number <= 36) {
-    numbers.push(number);
-    numberInput.value = "";
-
-    // On vérifie d'abord les nouvelles séquences
-    checkAlternances();
-
-    // Puis on met à jour l'affichage
-    updateDisplay();
-  } else {
-    alert("Veuillez entrer un numéro entre 0 et 36");
+  if (trimmed !== "" && Number.isInteger(number) && number >= 0 && number <= 36) {
+    return number;
   }
+  return null;
+}
+
+// Recalcule tout l'état (séquences, scores) en rejouant les tirages un par un,
+// exactement comme s'ils venaient d'être saisis : checkAlternances puis le
+// calcul des scores du dernier tirage. Seul le dernier tirage peut alerter.
+function rebuild({ alertLast = false } = {}) {
+  numbers.length = 0;
+  alternanceValues.length = 0;
+  ["color", "evenOdd", "passManque"].forEach((type) => {
+    Object.assign(activeSequences[type], {
+      active: false,
+      broken: false,
+      negativeCount: 0,
+      startCount: 0,
+    });
+  });
+
+  spins.forEach((spin, index) => {
+    numbers.push(spin.number);
+    const isLast = index === spins.length - 1;
+    checkAlternances(!(alertLast && isLast));
+    ["color", "evenOdd", "passManque"].forEach((type) =>
+      getAlternanceValue(spin.number, type, index)
+    );
+  });
+}
+
+// Supabase renvoie au plus 1000 lignes par requête : lecture par paquets
+async function fetchAllSpins() {
+  const PAGE_SIZE = 1000;
+  const all = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await db
+      .from("spins")
+      .select("id, number")
+      .order("id")
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    all.push(...data);
+    if (data.length < PAGE_SIZE) return all;
+  }
+}
+
+async function reload(scrollMode = "bottom") {
+  try {
+    spins = await fetchAllSpins();
+  } catch (error) {
+    console.error(error);
+    if (numbers.length === 0) {
+      resultsContainer.innerHTML = `<p class="status-message">Connexion à la base impossible.</p>`;
+    }
+    return;
+  }
+  rebuild();
+  updateDisplay(scrollMode);
+}
+
+async function addNumber() {
+  if (editMode || adding) return;
+
+  const number = parseSpin(numberInput.value);
+  if (number === null) {
+    alert("Veuillez entrer un numéro entre 0 et 36");
+    return;
+  }
+
+  adding = true;
+  addButton.disabled = true;
+  const { data, error } = await db
+    .from("spins")
+    .insert({ number })
+    .select("id, number")
+    .single();
+  adding = false;
+  addButton.disabled = false;
+
+  if (error) {
+    console.error(error);
+    alert("Erreur d'enregistrement : le tirage n'a pas été ajouté.");
+    return;
+  }
+
+  numberInput.value = "";
+  // La synchro en direct a pu recharger la liste entre-temps
+  if (!spins.some((spin) => spin.id === data.id)) {
+    spins.push(data);
+    spins.sort((a, b) => a.id - b.id);
+  }
+  // L'alerte n'est affichée que sur l'appareil qui a saisi le tirage
+  rebuild({ alertLast: spins[spins.length - 1].id === data.id });
+  updateDisplay("bottom");
+}
+
+// --- Mode édition : modifier ou supprimer n'importe quel tirage ---
+
+function setEditMode(on) {
+  editMode = on;
+  document.body.classList.toggle("edit-mode", on);
+  numberInput.disabled = on;
+  numberInput.value = "";
+  numberInput.placeholder = on
+    ? "Touchez un tirage à modifier"
+    : "Entrez un numéro";
+  addButton.hidden = on;
+  clearButton.hidden = !on;
+}
+
+async function editSpin(index) {
+  const spin = spins[index];
+  if (!spin) return;
+
+  const answer = prompt(
+    `Tirage n°${index + 1} : ${spin.number}\n\n` +
+      "Nouveau numéro (0 à 36), ou laisser vide pour le supprimer :",
+    String(spin.number)
+  );
+  if (answer === null) return; // Annulé : on reste en mode édition
+
+  let error = null;
+  if (answer.trim() === "") {
+    if (!confirm(`Supprimer le tirage n°${index + 1} (${spin.number}) ?`)) {
+      return;
+    }
+    ({ error } = await db.from("spins").delete().eq("id", spin.id));
+  } else {
+    const number = parseSpin(answer);
+    if (number === null) {
+      alert("Veuillez entrer un numéro entre 0 et 36");
+      return;
+    }
+    if (number === spin.number) {
+      setEditMode(false);
+      return;
+    }
+    ({ error } = await db.from("spins").update({ number }).eq("id", spin.id));
+  }
+
+  if (error) {
+    console.error(error);
+    alert("Erreur d'enregistrement : la modification n'a pas été faite.");
+    return;
+  }
+  setEditMode(false);
+  await reload("keep");
+}
+
+async function clearAllSpins() {
+  if (!confirm("Effacer TOUS les tirages ?")) return;
+  if (!confirm("Confirmer : tous les tirages seront définitivement effacés.")) {
+    return;
+  }
+
+  // Supabase refuse un delete sans filtre : id >= 0 couvre toutes les lignes
+  const { error } = await db.from("spins").delete().gte("id", 0);
+  if (error) {
+    console.error(error);
+    alert("Erreur : les tirages n'ont pas été effacés.");
+    return;
+  }
+  setEditMode(false);
+  await reload("bottom");
 }
 
 function handleKeyPress(event) {
@@ -184,13 +358,14 @@ function handleKeyPress(event) {
   }
 }
 
-// Modifier la fonction checkAlternances
-function checkAlternances() {
+// silent : met à jour les séquences sans afficher d'alerte (rejeu des tirages)
+function checkAlternances(silent = false) {
   const currentIndex = numbers.length - 1;
   const currentNum = numbers[currentIndex];
 
   // On vérifie d'abord si on a un zéro avec une séquence active
   if (currentNum === 0) {
+    if (silent) return;
     showSequenceAlert(
       ["color", "evenOdd", "passManque"].filter(
         (type) => activeSequences[type].active
@@ -225,6 +400,8 @@ function checkAlternances() {
       activeSequences[type].active = true;
     }
   });
+
+  if (silent) return;
 
   // Les alertes ne se déclencheront que si la séquence est active
   const alertTypes = [];
@@ -276,15 +453,40 @@ function showSequenceAlert(types) {
   alert(`Attention ! ${title}\n${labels.map((l) => `• ${l}`).join("\n")}`);
 }
 
-updateClosedNumbers();
-
 // Event Listeners
 numberInput.addEventListener("keypress", handleKeyPress);
 addButton.addEventListener("click", addNumber);
+editButton.addEventListener("click", () => setEditMode(!editMode));
+clearButton.addEventListener("click", clearAllSpins);
 
-document.addEventListener("DOMContentLoaded", function () {
-  const input = document.getElementById("numberInput");
-  const button = document.getElementById("addButton");
-  input.addEventListener("keypress", handleKeyPress);
-  button.addEventListener("click", addNumber);
+resultsContainer.addEventListener("click", (event) => {
+  if (!editMode) return;
+  const row = event.target.closest(".number-row");
+  if (row) editSpin(Number(row.dataset.index));
 });
+
+// Synchronisation entre appareils : tout changement en base recharge la liste
+let reloadTimer = null;
+function scheduleReload() {
+  clearTimeout(reloadTimer);
+  reloadTimer = setTimeout(() => reload(editMode ? "keep" : "bottom"), 200);
+}
+
+db.channel("spins-changes")
+  .on(
+    "postgres_changes",
+    { event: "*", schema: "public", table: "spins" },
+    scheduleReload
+  )
+  .subscribe();
+
+// Au retour sur l'app (téléphone sorti de veille), la connexion en direct
+// a pu être coupée : on recharge pour rattraper les tirages manqués
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) scheduleReload();
+});
+
+// Chargement initial : directement sur les derniers tirages
+updateClosedNumbers();
+resultsContainer.innerHTML = `<p class="status-message">Chargement…</p>`;
+reload("instant");
