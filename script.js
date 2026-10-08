@@ -128,7 +128,7 @@ function updateDisplay(scrollMode = "bottom") {
 
       if (n === 0) {
         return `<div class="number-row" data-index="${index}">
-          <span class="number" style="background-color: #4CAF50">${n}</span>
+          <span class="number">${n}</span>
           <span class="info-box">${colorValue || ""}</span>
           <span class="info-box">${evenOddValue || ""}</span>
           <span class="info-box">${passManqueValue || ""}</span>

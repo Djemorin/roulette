@@ -253,8 +253,13 @@ body.edit-mode .number-row {
   font-size: 20px; /* Taille de police plus grande */
   border-radius: 50%;
   font-weight: bold;
-  color: white;
+  color: #000;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Numéro du tirage toujours noir sur blanc, quelle que soit sa couleur */
+.number-row .number {
+  background-color: #fff;
 }
 
 .info-box {
