@@ -166,6 +166,113 @@ function getZones(num) {
   };
 }
 
+// --- Séries : l'inverse des alternances, sur les 7 catégories ---
+// Une série démarre sur 6 résultats identiques consécutifs. Chaque tirage
+// est comparé à la valeur de la série : +1 s'il la répète, -1 sinon. Deux -1
+// consécutifs la tuent, un +1 remet le compteur à zéro (même tolérance que
+// les alternances). Le 0 est neutre (-0.5 si série en cours), sauf pour les
+// tiers où il appartient à son secteur et compte comme un tirage normal.
+// Calculé une seule fois par tirage dans rebuild() : pas de mémo à protéger.
+const SERIES_LENGTH = 6;
+const SERIES_TYPES = [
+  "color",
+  "evenOdd",
+  "passManque",
+  "column",
+  "line",
+  "tiers1",
+  "tiers2",
+];
+const SERIES_NAMES = {
+  rouge: "Rouge",
+  noir: "Noir",
+  pair: "Pair",
+  impair: "Impair",
+  manque: "Manque",
+  passe: "Passe",
+  "colonne-1": "Colonne 1-12",
+  "colonne-2": "Colonne 13-24",
+  "colonne-3": "Colonne 25-36",
+  "ligne-1": "Ligne 1",
+  "ligne-2": "Ligne 2",
+  "ligne-3": "Ligne 3",
+};
+[...TIERS_1, ...TIERS_2].forEach((sector, i) => {
+  SERIES_NAMES[sector.cls] = `Tiers ${i < 3 ? 1 : 2} (${sector.label})`;
+});
+
+const seriesStates = {}; // par catégorie : { active, value, negativeCount, startCount }
+const seriesHistory = {}; // par catégorie : valeurs des tirages non neutres
+const seriesValues = []; // parallèle à numbers : { color: "+1", column: "-1"… }
+let seriesAlertTypes = []; // séries à annoncer pour le dernier tirage rejoué
+
+function getSeriesValue(type, num) {
+  if (type === "tiers1" || type === "tiers2") return getZones(num)[type].cls;
+  if (num === 0) return null; // neutre
+  if (type === "column" || type === "line") return getZones(num)[type];
+  return getNumberInfo(num)[type];
+}
+
+function resetSeries() {
+  seriesValues.length = 0;
+  seriesAlertTypes = [];
+  SERIES_TYPES.forEach((type) => {
+    seriesStates[type] = { active: false, value: null, negativeCount: 0, startCount: 0 };
+    seriesHistory[type] = [];
+  });
+}
+
+// Fait avancer les séries d'un tirage ; renvoie les catégories à annoncer
+// (série en cours, sauf sur la cassure qui la tue — comme les alternances)
+function stepSeries(index) {
+  const num = numbers[index];
+  const scores = {};
+  const alertTypes = [];
+
+  SERIES_TYPES.forEach((type) => {
+    const state = seriesStates[type];
+    const history = seriesHistory[type];
+    const value = getSeriesValue(type, num);
+
+    if (value === null) {
+      if (state.active) {
+        scores[type] = "-0.5";
+        alertTypes.push(type);
+      }
+      return;
+    }
+
+    history.push(value);
+    if (!state.active) {
+      const last = history.slice(-SERIES_LENGTH);
+      if (last.length < SERIES_LENGTH || !last.every((v) => v === value)) return;
+      Object.assign(state, {
+        active: true,
+        value,
+        negativeCount: 0,
+        startCount: history.length - SERIES_LENGTH,
+      });
+    }
+
+    if (value === state.value) {
+      scores[type] = "+1";
+      state.negativeCount = 0;
+    } else {
+      scores[type] = "-1";
+      state.negativeCount++;
+      if (state.negativeCount === 2) {
+        state.active = false;
+        state.negativeCount = 0;
+        return;
+      }
+    }
+    alertTypes.push(type);
+  });
+
+  seriesValues[index] = scores;
+  return alertTypes;
+}
+
 function getLastSeen(num, index) {
   const previousNumbers = numbers.slice(0, index);
   const lastIndex = previousNumbers.lastIndexOf(num);
@@ -187,14 +294,21 @@ function updateDisplay(scrollMode = "bottom") {
       const zones = getZones(n);
       const lastSeen = getLastSeen(n, index);
 
-      // Pas de libellé : la couleur suffit, seul le score s'écrit dans la case
-      const scoreBox = (type) => {
-        const value = getAlternanceValue(n, type, index);
+      // Pas de libellé : la couleur suffit, seuls les scores s'écrivent dans
+      // la case (série puis alternance, comme dans l'alerte)
+      const scoreBox = (type, cls) => {
+        const scores = [];
+        const seriesScore = seriesValues[index] && seriesValues[index][type];
+        if (seriesScore) scores.push(seriesScore);
+        if (cls === undefined) {
+          const value = getAlternanceValue(n, type, index);
+          if (value) scores.push(value.trim());
+        }
         const dominant =
           dominances[index] && dominances[index][type] && dominances[index][type].marked;
-        return `<span class="info-box ${info[type]}${dominant ? " dominante" : ""}">${
-          value ? value.trim() : ""
-        }</span>`;
+        return `<span class="info-box ${cls === undefined ? info[type] : cls}${
+          dominant ? " dominante" : ""
+        }">${scores.join(" ")}</span>`;
       };
 
       return `<div class="number-row" data-index="${index}">
@@ -202,8 +316,8 @@ function updateDisplay(scrollMode = "bottom") {
           ${scoreBox("color")}
           ${scoreBox("evenOdd")}
           ${scoreBox("passManque")}
-          <span class="info-box ${zones.column}"></span>
-          <span class="info-box ${zones.line}"></span>
+          ${scoreBox("column", zones.column)}
+          ${scoreBox("line", zones.line)}
           <span class="info-box tiers ${zones.tiers1.cls}">${zones.tiers1.label}</span>
           <span class="info-box tiers ${zones.tiers2.cls}">${zones.tiers2.label}</span>
           <span class="info-box last-seen">${lastSeen} tours</span>
@@ -257,6 +371,7 @@ function rebuild({ alertLast = false } = {}) {
   numbers.length = 0;
   alternanceValues.length = 0;
   dominances.length = 0;
+  resetSeries();
   ["color", "evenOdd", "passManque"].forEach((type) => {
     Object.assign(activeSequences[type], {
       active: false,
@@ -270,6 +385,7 @@ function rebuild({ alertLast = false } = {}) {
     numbers.push(spin.number);
     // Avant checkAlternances : l'alerte du tirage lit sa dominante
     dominances.push(getDominance(index));
+    seriesAlertTypes = stepSeries(index);
     const isLast = index === spins.length - 1;
     checkAlternances(!(alertLast && isLast));
     ["color", "evenOdd", "passManque"].forEach((type) =>
@@ -437,7 +553,12 @@ function checkAlternances(silent = false) {
   }
 
   const nonZeroNumbers = numbers.filter((n) => n !== 0);
-  if (nonZeroNumbers.length < 6) return;
+  if (nonZeroNumbers.length < 6) {
+    // Pas encore d'alternance possible, mais une série des tiers peut
+    // compter des zéros : l'alerte doit quand même passer
+    if (!silent) showSequenceAlert([]);
+    return;
+  }
 
   const last6 = nonZeroNumbers.slice(-6);
   const info = last6.map((n) => getNumberInfo(n));
@@ -492,39 +613,50 @@ function checkAlternances(silent = false) {
   showSequenceAlert(alertTypes);
 }
 
-// Une seule alerte par tirage : séquences en cours, puis dominante du tirage
+// Une seule alerte par tirage, toujours dans le même ordre : SÉRIES,
+// ALTERNANCES, DOMINANTE ; dans chaque section, l'ordre des cases de la page.
+// types : alternances à annoncer (les séries et la dominante sont lues ici).
 function showSequenceAlert(types) {
   const dominance = dominances[numbers.length - 1] || {};
-  const dominanceTypes = Object.keys(dominance);
-  if (types.length === 0 && dominanceTypes.length === 0) return;
-
-  // Longueur de la séquence en tirages non nuls (les zéros ne comptent pas)
-  const nonZeroCount = numbers.filter((n) => n !== 0).length;
-
-  const labels = types.map((type) => {
-    const name =
-      type === "color"
-        ? "Rouge/Noir"
-        : type === "evenOdd"
-        ? "Pair/Impair"
-        : "Passe/Manque";
-    return `${name} : ${nonZeroCount - activeSequences[type].startCount} tours`;
-  });
-
-  // Une ligne par séquence pour ne pas en rater une
   const sections = [];
-  if (labels.length > 0) {
-    const title =
-      labels.length === 1 ? "Séquence en cours :" : "Séquences en cours :";
-    sections.push(`${title}\n${labels.map((l) => `• ${l}`).join("\n")}`);
-  }
-  dominanceTypes.forEach((type) => {
-    const { value, count } = dominance[type];
-    const name = value.charAt(0).toUpperCase() + value.slice(1);
-    sections.push(`Dominante ${name} : ${count}/${DOMINANCE_WINDOW}`);
-  });
 
-  alert(`Attention !\n${sections.join("\n\n")}`);
+  // Longueur en tirages comptés par la catégorie depuis les 6 d'ouverture
+  const seriesLines = SERIES_TYPES.filter((type) =>
+    seriesAlertTypes.includes(type)
+  ).map((type) => {
+    const state = seriesStates[type];
+    const length = seriesHistory[type].length - state.startCount;
+    return `• ${SERIES_NAMES[state.value]} : ${length} tours`;
+  });
+  if (seriesLines.length > 0) sections.push(`SÉRIES\n${seriesLines.join("\n")}`);
+
+  // Longueur en tirages non nuls (les zéros ne comptent pas)
+  const nonZeroCount = numbers.filter((n) => n !== 0).length;
+  const alternanceLines = ["color", "evenOdd", "passManque"]
+    .filter((type) => types.includes(type))
+    .map((type) => {
+      const name =
+        type === "color"
+          ? "Rouge/Noir"
+          : type === "evenOdd"
+          ? "Pair/Impair"
+          : "Passe/Manque";
+      return `• ${name} : ${nonZeroCount - activeSequences[type].startCount} tours`;
+    });
+  if (alternanceLines.length > 0) {
+    sections.push(`ALTERNANCES\n${alternanceLines.join("\n")}`);
+  }
+
+  const dominanceLines = DOMINANCE_TYPES.filter((type) => dominance[type]).map(
+    (type) =>
+      `• ${SERIES_NAMES[dominance[type].value]} : ${dominance[type].count}/${DOMINANCE_WINDOW}`
+  );
+  if (dominanceLines.length > 0) {
+    sections.push(`DOMINANTE\n${dominanceLines.join("\n")}`);
+  }
+
+  if (sections.length === 0) return;
+  alert(sections.join("\n────────────\n"));
 }
 
 // Event Listeners

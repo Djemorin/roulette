@@ -335,6 +335,13 @@ body.edit-mode .number-row {
 .ligne-3 {
   background-color: #4f6228;
 }
+/* Scores en noir sur les teintes claires des colonnes et lignes */
+.colonne-1,
+.colonne-2,
+.ligne-1,
+.ligne-2 {
+  color: #000;
+}
 /* Tiers : nom du secteur en blanc, ombré pour rester lisible sur les teintes claires */
 .tiers {
   font-size: 12px;
