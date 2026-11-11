@@ -305,6 +305,11 @@ body.edit-mode .number-row {
 .passe {
   background-color: #7b4a2a;
 }
+/* Dominante : bordure dorée bien visible, même sur le noir */
+.info-box.dominante {
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 6px 1px rgba(255, 215, 0, 0.8);
+}
 /* Le 0 sur le tapis */
 .zero {
   background-color: #ff00ff;

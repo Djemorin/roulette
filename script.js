@@ -38,6 +38,42 @@ const activeSequences = {
 // Ajouter après les variables globales
 const alternanceValues = []; // Stocke les valeurs d'alternance pour chaque tirage
 
+// Dominante : au moins 7 tirages de la même valeur sur les 10 derniers non
+// nuls. Tant qu'elle tient, chaque tirage l'annonce dans l'alerte (0 et
+// couleur opposée compris), mais seul un tirage de la valeur dominante reçoit
+// la bordure (marked). Générique par catégorie, activée sur rouge/noir.
+const DOMINANCE_WINDOW = 10;
+const DOMINANCE_THRESHOLD = 7;
+const DOMINANCE_TYPES = ["color"];
+// parallèle à numbers : { color: { value, count, marked } } ou {}
+const dominances = [];
+
+// Calcul pur, sans état : dominante en cours au tirage index (les 10 derniers
+// non nuls jusqu'à lui ; pour un 0, ce sont ceux qui le précèdent)
+function getDominance(index) {
+  const result = {};
+  const window = [];
+  for (let i = index; i >= 0 && window.length < DOMINANCE_WINDOW; i--) {
+    if (numbers[i] !== 0) window.push(getNumberInfo(numbers[i]));
+  }
+  if (window.length < DOMINANCE_WINDOW) return result;
+
+  const current = numbers[index] === 0 ? null : getNumberInfo(numbers[index]);
+  DOMINANCE_TYPES.forEach((type) => {
+    const counts = {};
+    window.forEach((info) => {
+      counts[info[type]] = (counts[info[type]] || 0) + 1;
+    });
+    Object.entries(counts).forEach(([value, count]) => {
+      if (count >= DOMINANCE_THRESHOLD) {
+        const marked = current !== null && current[type] === value;
+        result[type] = { value, count, marked };
+      }
+    });
+  });
+  return result;
+}
+
 function isEven(num) {
   return num % 2 === 0;
 }
@@ -154,7 +190,11 @@ function updateDisplay(scrollMode = "bottom") {
       // Pas de libellé : la couleur suffit, seul le score s'écrit dans la case
       const scoreBox = (type) => {
         const value = getAlternanceValue(n, type, index);
-        return `<span class="info-box ${info[type]}">${value ? value.trim() : ""}</span>`;
+        const dominant =
+          dominances[index] && dominances[index][type] && dominances[index][type].marked;
+        return `<span class="info-box ${info[type]}${dominant ? " dominante" : ""}">${
+          value ? value.trim() : ""
+        }</span>`;
       };
 
       return `<div class="number-row" data-index="${index}">
@@ -216,6 +256,7 @@ function parseSpin(rawValue) {
 function rebuild({ alertLast = false } = {}) {
   numbers.length = 0;
   alternanceValues.length = 0;
+  dominances.length = 0;
   ["color", "evenOdd", "passManque"].forEach((type) => {
     Object.assign(activeSequences[type], {
       active: false,
@@ -227,6 +268,8 @@ function rebuild({ alertLast = false } = {}) {
 
   spins.forEach((spin, index) => {
     numbers.push(spin.number);
+    // Avant checkAlternances : l'alerte du tirage lit sa dominante
+    dominances.push(getDominance(index));
     const isLast = index === spins.length - 1;
     checkAlternances(!(alertLast && isLast));
     ["color", "evenOdd", "passManque"].forEach((type) =>
@@ -449,9 +492,11 @@ function checkAlternances(silent = false) {
   showSequenceAlert(alertTypes);
 }
 
-// Une seule alerte regroupant toutes les séquences en cours
+// Une seule alerte par tirage : séquences en cours, puis dominante du tirage
 function showSequenceAlert(types) {
-  if (types.length === 0) return;
+  const dominance = dominances[numbers.length - 1] || {};
+  const dominanceTypes = Object.keys(dominance);
+  if (types.length === 0 && dominanceTypes.length === 0) return;
 
   // Longueur de la séquence en tirages non nuls (les zéros ne comptent pas)
   const nonZeroCount = numbers.filter((n) => n !== 0).length;
@@ -467,9 +512,19 @@ function showSequenceAlert(types) {
   });
 
   // Une ligne par séquence pour ne pas en rater une
-  const title =
-    labels.length === 1 ? "Séquence en cours :" : "Séquences en cours :";
-  alert(`Attention ! ${title}\n${labels.map((l) => `• ${l}`).join("\n")}`);
+  const sections = [];
+  if (labels.length > 0) {
+    const title =
+      labels.length === 1 ? "Séquence en cours :" : "Séquences en cours :";
+    sections.push(`${title}\n${labels.map((l) => `• ${l}`).join("\n")}`);
+  }
+  dominanceTypes.forEach((type) => {
+    const { value, count } = dominance[type];
+    const name = value.charAt(0).toUpperCase() + value.slice(1);
+    sections.push(`Dominante ${name} : ${count}/${DOMINANCE_WINDOW}`);
+  });
+
+  alert(`Attention !\n${sections.join("\n\n")}`);
 }
 
 // Event Listeners
