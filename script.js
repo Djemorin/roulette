@@ -106,6 +106,30 @@ function getNumberInfo(num) {
   };
 }
 
+// Tiers : secteurs du cylindre, chacun écrit dans sa case pour le repérer
+const TIERS_1 = [
+  { cls: "t1-fonce", label: "0/14", numbers: [0, 26, 3, 35, 12, 28, 7, 29, 18, 22, 9, 31, 14] },
+  { cls: "t1-moyen", label: "20/36", numbers: [20, 1, 33, 16, 24, 5, 10, 23, 8, 30, 11, 36] },
+  { cls: "t1-clair", label: "13/32", numbers: [13, 27, 6, 34, 17, 25, 2, 21, 4, 19, 15, 32] },
+];
+const TIERS_2 = [
+  { cls: "t2-fonce", label: "2/7", numbers: [2, 21, 4, 19, 15, 32, 0, 26, 3, 35, 12, 28, 7] },
+  { cls: "t2-moyen", label: "29/5", numbers: [29, 18, 22, 9, 31, 14, 20, 1, 33, 16, 24, 5] },
+  { cls: "t2-clair", label: "10/25", numbers: [10, 23, 8, 30, 11, 36, 13, 27, 6, 34, 17, 25] },
+];
+
+// Zones du tapis (colonne = 1-12 / 13-24 / 25-36, ligne = 1-4-7… / 2-5-8… /
+// 3-6-9…) et secteurs des tiers. Le 0 est rose sur le tapis, mais appartient
+// à un secteur de chaque tiers. Affichage seul : pas encore d'alternances.
+function getZones(num) {
+  return {
+    column: num === 0 ? "zero" : `colonne-${Math.ceil(num / 12)}`,
+    line: num === 0 ? "zero" : `ligne-${((num - 1) % 3) + 1}`,
+    tiers1: TIERS_1.find((s) => s.numbers.includes(num)),
+    tiers2: TIERS_2.find((s) => s.numbers.includes(num)),
+  };
+}
+
 function getLastSeen(num, index) {
   const previousNumbers = numbers.slice(0, index);
   const lastIndex = previousNumbers.lastIndexOf(num);
@@ -119,36 +143,31 @@ function updateDisplay(scrollMode = "bottom") {
 
   resultsContainer.innerHTML = numbers
     .map((n, index) => {
-      const info = getNumberInfo(n);
+      // Le 0 est rose sur les trois catégories (getNumberInfo(0) n'a pas de sens)
+      const info =
+        n === 0
+          ? { color: "zero", evenOdd: "zero", passManque: "zero" }
+          : getNumberInfo(n);
+      const zones = getZones(n);
       const lastSeen = getLastSeen(n, index);
 
-      const colorValue = getAlternanceValue(n, "color", index);
-      const evenOddValue = getAlternanceValue(n, "evenOdd", index);
-      const passManqueValue = getAlternanceValue(n, "passManque", index);
-
-      if (n === 0) {
-        return `<div class="number-row" data-index="${index}">
-          <span class="number">${n}</span>
-          <span class="info-box">${colorValue || ""}</span>
-          <span class="info-box">${evenOddValue || ""}</span>
-          <span class="info-box">${passManqueValue || ""}</span>
-          <span class="info-box last-seen">${lastSeen} tours</span>
-        </div>`;
-      }
+      // Pas de libellé : la couleur suffit, seul le score s'écrit dans la case
+      const scoreBox = (type) => {
+        const value = getAlternanceValue(n, type, index);
+        return `<span class="info-box ${info[type]}">${value ? value.trim() : ""}</span>`;
+      };
 
       return `<div class="number-row" data-index="${index}">
-                <span class="number ${info.color}">${n}</span>
-                <span class="info-box ${info.color}">${
-        colorValue || info.color
-      }</span>
-                <span class="info-box ${info.evenOdd}">${
-        evenOddValue || info.evenOdd
-      }</span>
-                <span class="info-box ${info.passManque}">${
-        passManqueValue || info.passManque
-      }</span>
-                <span class="info-box last-seen">${lastSeen} tours</span>
-            </div>`;
+          <span class="number">${n}</span>
+          ${scoreBox("color")}
+          ${scoreBox("evenOdd")}
+          ${scoreBox("passManque")}
+          <span class="info-box ${zones.column}"></span>
+          <span class="info-box ${zones.line}"></span>
+          <span class="info-box tiers ${zones.tiers1.cls}">${zones.tiers1.label}</span>
+          <span class="info-box tiers ${zones.tiers2.cls}">${zones.tiers2.label}</span>
+          <span class="info-box last-seen">${lastSeen} tours</span>
+        </div>`;
     })
     .join("");
 
